@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>N-Stock | Panel Integral</title>
+    <style>
+        :root { --primary: #6200ee; --secondary: #03dac6; --bg: #f0f2f5; --accent: #ff9800; }
+        body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); margin: 0; padding: 20px; }
+        .container { max-width: 1200px; margin: auto; }
+        .header { text-align: center; margin-bottom: 30px; }
+        
+        /* Layout en 3 columnas */
+        .grid { display: grid; grid-template-columns: 1fr 1fr 1.5fr; gap: 20px; }
+        
+        .card { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); display: flex; flex-direction: column; }
+        h2 { margin-top: 0; font-size: 1.2rem; color: #444; border-bottom: 2px solid var(--bg); padding-bottom: 10px; }
+        
+        input { padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; font-size: 1rem; }
+        .btn { padding: 12px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; color: white; transition: 0.3s; }
+        
+        .btn-search { background: var(--accent); }
+        .btn-sell { background: var(--primary); }
+        .btn-refresh { background: #eee; color: #333; margin-bottom: 10px; }
+        .btn:hover { opacity: 0.8; transform: translateY(-2px); }
+
+        /* Estilos de tabla y resultados */
+        table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #eee; }
+        th { background: #f8f9fa; }
+        
+        .result-box { margin-top: 15px; padding: 15px; border-radius: 8px; background: #f9f9f9; border-left: 5px solid var(--accent); min-height: 50px; }
+        .badge { background: #e8e0ff; color: #6200ee; padding: 3px 8px; border-radius: 5px; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <h1>📦 N-Stock: Gestión de Inventario </h1>
+    </div>
+
+    <div class="grid">
+        
+        <div class="card">
+            <h2>🔍 Consultor de Precios</h2>
+            <p style="font-size: 0.8rem; color: #666;">Ingresa el código de barras (EAN-13)</p>
+            <input type="text" id="scanInput" placeholder="780..." onkeypress="if(event.key==='Enter') consultarPrecio()">
+            <button class="btn btn-search" onclick="consultarPrecio()">CONSULTAR PRODUCTO</button>
+            
+            <div id="infoProducto" class="result-box">
+                <i>Esperando escaneo...</i>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>🛒 Punto de Venta</h2>
+            <label>ID del Producto:</label>
+            <input type="number" id="prodId" placeholder="Ej: 1">
+            <label>Cantidad:</label>
+            <input type="number" id="cant" value="1">
+            <button class="btn btn-sell" onclick="realizarVenta()">REGISTRAR VENTA</button>
+            <div id="mensajeVenta" style="margin-top: 15px; font-weight: bold;"></div>
+        </div>
+
+        <div class="card">
+            <h2>📊 Stock en Bodega</h2>
+            <button class="btn btn-refresh" onclick="cargarInventario()">🔄 Actualizar Datos</button>
+            <table id="tablaInventario">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Producto</th>
+                        <th>Stock</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+
+    </div>
+</div>
+
+<script>
+    const API_BASE = "http://localhost:8081/api";
+
+    // --- FUNCIÓN: CONSULTAR PRECIO ---
+    async function consultarPrecio() {
+        const codigo = document.getElementById('scanInput').value;
+        const box = document.getElementById('infoProducto');
+        
+        try {
+            const res = await fetch(`${API_BASE}/productos/buscar?codigo=${codigo}`);
+            const data = await res.json();
+
+            if (res.ok) {
+                box.style.borderLeftColor = "var(--accent)";
+                box.innerHTML = `
+                    <h3 style="margin:0">${data.nombre}</h3>
+                    <p style="font-size: 1.5rem; color: var(--primary); margin: 10px 0;">$${data.precio}</p>
+                    <span class="badge">${data.categoria}</span>
+                `;
+                // Autocompletar el ID en la sección de venta para facilitar el video
+                document.getElementById('prodId').value = data.idProducto;
+            } else {
+                box.style.borderLeftColor = "red";
+                box.innerHTML = `<b style="color:red">❌ Producto no encontrado</b>`;
+            }
+        } catch (err) {
+            box.innerHTML = "Error de conexión";
+        }
+    }
+
+    // --- FUNCIÓN: REALIZAR VENTA ---
+    async function realizarVenta() {
+        const idProd = document.getElementById('prodId').value;
+        const cantidad = document.getElementById('cant').value;
+        const msg = document.getElementById('mensajeVenta');
+
+        const ventaData = {
+            idSucursal: 1,
+            idUsuario: 1,
+            detalles: [{ idProducto: parseInt(idProd), cantidad: parseInt(cantidad) }]
+        };
+
+        try {
+            const res = await fetch(`${API_BASE}/ventas/registrar`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(ventaData)
+            });
+            const data = await res.json();
+
+            if (res.ok) {
+                msg.style.color = "green";
+                msg.innerText = `✅ Venta OK: $${data.total}`;
+                cargarInventario(); // Refresca el stock automáticamente
+            } else {
+                msg.style.color = "red";
+                msg.innerText = `❌ Error: ${data.error}`;
+            }
+        } catch (err) { msg.innerText = "Error de conexión"; }
+    }
+
+    // --- FUNCIÓN: CARGAR INVENTARIO ---
+    async function cargarInventario() {
+        try {
+            const res = await fetch(`${API_BASE}/inventario`);
+            const data = await res.json();
+            const tbody = document.querySelector("#tablaInventario tbody");
+            tbody.innerHTML = "";
+            
+            data.forEach(item => {
+                const row = `<tr>
+                    <td><span class="badge">#${item.idProducto}</span></td>
+                    <td>${item.nombreProducto || 'Sin Nombre'}</td>
+                    <td><strong>${item.stockActual}</strong> un.</td>
+                </tr>`;
+                tbody.innerHTML += row;
+            });
+        } catch (err) { console.error(err); }
+    }
+
+    // Carga inicial
+    cargarInventario();
+</script>
+
+</body>
+</html>

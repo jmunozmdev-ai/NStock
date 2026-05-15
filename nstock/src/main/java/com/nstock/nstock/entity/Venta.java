@@ -1,8 +1,13 @@
 package com.nstock.nstock.entity;
 
-import jakarta.persistence.*;
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 
 @Entity
 @Table(name = "Ventas")
@@ -13,41 +18,68 @@ public class Venta {
     @Column(name = "id_venta")
     private Integer idVenta;
 
-    // LocalDateTime es la clase moderna de Java para manejar Fechas y Horas
     @Column(name = "fecha_hora")
     private LocalDateTime fechaHora;
 
-    @Column(nullable = false, precision = 10, scale = 2)
-    private BigDecimal total;
+    @Column(name = "total")
+    private Integer total; // Unificado a Integer para la app móvil
 
-    // Relación: Qué cajero hizo la venta
-    @ManyToOne
-    @JoinColumn(name = "id_usuario")
-    private Usuario usuario;
+    @Column(name = "id_usuario")
+    private Integer idUsuario;
 
-    // Relación: En qué local se hizo
-    @ManyToOne
-    @JoinColumn(name = "id_sucursal")
-    private Sucursal sucursal;
+    @Column(name = "id_sucursal")
+    private Integer idSucursal;
 
-    public Venta() {
+    @Column(name = "medio_pago")
+    private String medioPago;
+
+    // --- GETTERS ---
+    public Integer getIdVenta() {
+        return idVenta;
     }
 
-    // ==========================================
-    // Getters y Setters
-    // ==========================================
-    public Integer getIdVenta() { return idVenta; }
-    public void setIdVenta(Integer idVenta) { this.idVenta = idVenta; }
+    public LocalDateTime getFechaHora() {
+        return fechaHora;
+    }
 
-    public LocalDateTime getFechaHora() { return fechaHora; }
-    public void setFechaHora(LocalDateTime fechaHora) { this.fechaHora = fechaHora; }
+    public Integer getTotal() {
+        return total;
+    }
 
-    public BigDecimal getTotal() { return total; }
-    public void setTotal(BigDecimal total) { this.total = total; }
+    public Integer getIdUsuario() {
+        return idUsuario;
+    }
 
-    public Usuario getUsuario() { return usuario; }
-    public void setUsuario(Usuario usuario) { this.usuario = usuario; }
+    public Integer getIdSucursal() {
+        return idSucursal;
+    }
 
-    public Sucursal getSucursal() { return sucursal; }
-    public void setSucursal(Sucursal sucursal) { this.sucursal = sucursal; }
+    public String getMedioPago() {
+        return medioPago;
+    }
+
+    // --- SETTERS ---
+    public void setIdVenta(Integer idVenta) {
+        this.idVenta = idVenta;
+    }
+
+    public void setFechaHora(LocalDateTime fechaHora) {
+        this.fechaHora = fechaHora;
+    }
+
+    public void setTotal(Integer total) {
+        this.total = total;
+    }
+
+    public void setIdUsuario(Integer idUsuario) {
+        this.idUsuario = idUsuario;
+    }
+
+    public void setIdSucursal(Integer idSucursal) {
+        this.idSucursal = idSucursal;
+    }
+
+    public void setMedioPago(String medioPago) {
+        this.medioPago = medioPago;
+    }
 }

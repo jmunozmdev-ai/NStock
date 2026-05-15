@@ -4,52 +4,29 @@ import jakarta.persistence.*;
 
 @Entity
 @Table(name = "Inventario")
-// Usamos @IdClass para decirle a Spring que la llave primaria está compuesta por dos campos
-@IdClass(InventarioId.class)
+@IdClass(InventarioId.class) // Aquí le decimos que use la llave compuesta
 public class Inventario {
 
-    // Llave primaria 1 y Foránea hacia Producto
+    // Debe llamarse EXACTAMENTE igual que en InventarioId.java
     @Id
-    @ManyToOne
-    @JoinColumn(name = "id_producto")
-    private Producto producto;
+    @Column(name = "id_producto")
+    private Integer idProducto; 
 
-    // Llave primaria 2 y Foránea hacia Sucursal
+    // Debe llamarse EXACTAMENTE igual que en InventarioId.java
     @Id
-    @ManyToOne
-    @JoinColumn(name = "id_sucursal")
-    private Sucursal sucursal;
+    @Column(name = "id_sucursal")
+    private Integer idSucursal;
 
-    @Column(name = "stock_actual", columnDefinition = "int default 0")
+    @Column(name = "stock_actual")
     private Integer stockActual;
 
-    public Inventario() {
-    }
+    // --- GETTERS ---
+    public Integer getIdProducto() { return idProducto; }
+    public Integer getIdSucursal() { return idSucursal; }
+    public Integer getStockActual() { return stockActual; }
 
-    // ==========================================
-    // Getters y Setters
-    // ==========================================
-    public Producto getProducto() {
-        return producto;
-    }
-
-    public void setProducto(Producto producto) {
-        this.producto = producto;
-    }
-
-    public Sucursal getSucursal() {
-        return sucursal;
-    }
-
-    public void setSucursal(Sucursal sucursal) {
-        this.sucursal = sucursal;
-    }
-
-    public Integer getStockActual() {
-        return stockActual;
-    }
-
-    public void setStockActual(Integer stockActual) {
-        this.stockActual = stockActual;
-    }
+    // --- SETTERS ---
+    public void setIdProducto(Integer idProducto) { this.idProducto = idProducto; }
+    public void setIdSucursal(Integer idSucursal) { this.idSucursal = idSucursal; }
+    public void setStockActual(Integer stockActual) { this.stockActual = stockActual; }
 }
