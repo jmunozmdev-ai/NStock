@@ -666,7 +666,7 @@ td.muted{color:var(--text2)}
 async function cargarInventarioDesdeAPI() {
     console.log("Iniciando carga de Inventario...");
     try {
-        const res = await fetch('http://localhost:8081/api/inventario');
+        const res = await fetch('/api/inventario');
         const data = await res.json();
         products = data.map(item => ({
             id: item.idProducto,
@@ -688,7 +688,7 @@ async function cargarInventarioDesdeAPI() {
 async function cargarSucursalesDesdeAPI() {
     console.log("Iniciando carga de Sucursales...");
     try {
-        const res = await fetch('http://localhost:8081/api/sucursales');
+        const res = await fetch('/api/sucursales');
         const data = await res.json();
         branches = data.map(suc => ({
             nombre: suc.nombre,
@@ -720,7 +720,7 @@ var roles = {
 // --- NUEVA FUNCIÓN: CARGAR INVENTARIO DESDE EL BACKEND ---
 async function cargarInventarioDesdeAPI() {
     try {
-        const res = await fetch('http://localhost:8081/api/inventario');
+        const res = await fetch('/api/inventario');
         const data = await res.json();
         
         products = data.map(item => {
@@ -1004,7 +1004,7 @@ async function addProduct() {
   };
 
   try {
-    const res = await fetch('http://localhost:8081/api/productos', {
+    const res = await fetch('/api/productos', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
@@ -1050,7 +1050,7 @@ async function buscarParaVenta() {
     if (!codigo) return;
     
     try {
-        const res = await fetch(`http://localhost:8081/api/productos/buscar?codigo=${codigo}`);
+        const res = await fetch(`/api/productos/buscar?codigo=${codigo}`);
         if (res.ok) {
             const prod = await res.json();
             
@@ -1208,7 +1208,7 @@ async function completarVenta() {
     };
 
     try {
-        const res = await fetch('http://localhost:8081/api/ventas/registrar', {
+        const res = await fetch('/api/ventas/registrar', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
@@ -1237,7 +1237,7 @@ async function pedirNuevoStock(id, nombre) {
     
     if (nuevoStock !== null && nuevoStock.trim() !== "" && !isNaN(nuevoStock)) {
         try {
-            const res = await fetch(`http://localhost:8081/api/inventario/${id}/stock`, {
+            const res = await fetch(`/api/inventario/${id}/stock`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ nuevoStock: parseInt(nuevoStock) })
@@ -1262,7 +1262,7 @@ async function pedirNuevoStock(id, nombre) {
                 idUsuario: 1,
                 detalles: [{ idProducto: 1, cantidad: 1 }]
             };
-            const res = await fetch('http://localhost:8081/api/ventas/registrar', {
+            const res = await fetch('/api/ventas/registrar', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify(venta)
@@ -1281,7 +1281,7 @@ async function pedirNuevoStock(id, nombre) {
             }
 
             try {
-                const res = await fetch('http://localhost:8081/api/inventario/sumar-stock', {
+                const res = await fetch('/api/inventario/sumar-stock', {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -1339,7 +1339,7 @@ async function pedirNuevoStock(id, nombre) {
               }
 
               try {
-                  const res = await fetch('http://localhost:8081/api/inventario/sumar-stock', {
+                  const res = await fetch('/api/inventario/sumar-stock', {
                       method: 'PUT',
                       headers: { 'Content-Type': 'application/json' },
                       body: JSON.stringify({
@@ -1381,7 +1381,7 @@ function generarBotonEditar(id, nombre, precio) {
 async function abrirModalEditar(id) {
     try {
         // Consultamos los datos reales del producto
-        const res = await fetch(`http://localhost:8081/api/productos/obtener/${id}`);
+        const res = await fetch(`/api/productos/obtener/${id}`);
         
         if (res.ok) {
             const p = await res.json();
@@ -1416,7 +1416,7 @@ async function abrirModalEditar(id) {
             }
 
             try {
-                const res = await fetch(`http://localhost:8081/api/productos/editar/${id}`, {
+                const res = await fetch(`/api/productos/editar/${id}`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
