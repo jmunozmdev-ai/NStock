@@ -1,6 +1,8 @@
 package com.nstock.nstock.service;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -34,32 +36,32 @@ public class VentaService {
     @Autowired
     private InventarioRepository inventarioRepository;
 
-    @Transactional // ¡La palabra mágica de seguridad!
+   @Transactional // ¡La palabra mágica de seguridad!
     public Venta registrarVenta(VentaRequestDTO request) {
 
         // 1. Crear la boleta principal (Venta) vacía para obtener su ID
         Venta venta = new Venta();
         venta.setIdSucursal(request.getIdSucursal());
         venta.setIdUsuario(request.getIdUsuario());
-
-        // NUEVO CAMPO
         venta.setMedioPago(request.getMedioPago());
-
         venta.setFechaHora(LocalDateTime.now());
-        venta.setTotal(0); // Empezamos en 0, lo sumaremos al final
+        venta.setTotal(0); 
         venta = ventaRepository.save(venta);
 
         int totalVenta = 0;
 
-        // 2. Abrir la caja y procesar cada producto que envió la aplicación móvil
+        // PREPARAR LISTAS PARA GUARDADO EN BLOQUE (Optimización de velocidad)
+        List<Inventario> inventariosAActualizar = new ArrayList<>();
+        List<MovimientoInventario> movimientosAGuardar = new ArrayList<>();
+        List<DetalleVenta> detallesAGuardar = new ArrayList<>();
+
+        // 2. Abrir la caja y procesar cada productoz   
         for (DetalleVentaDTO item : request.getDetalles()) {
 
-            // a. Buscar el producto real para asegurar que el precio sea el correcto
             Producto producto = productoRepository.findById(item.getIdProducto())
                     .orElseThrow(() -> new RuntimeException(
                     "Producto no encontrado: ID " + item.getIdProducto()));
 
-            // b. Ir a la bodega (Inventario) a revisar si hay stock en ESA sucursal
             InventarioId invId = new InventarioId(
                     item.getIdProducto(),
                     request.getIdSucursal()
@@ -74,25 +76,21 @@ public class VentaService {
                         "Stock insuficiente para: " + producto.getNombre());
             }
 
-            // c. ¡Descontar el stock de la repisa!
-            inventario.setStockActual(
-                    inventario.getStockActual() - item.getCantidad());
+            // Restar stock y agregar a la lista, NO guardar todavía
+            inventario.setStockActual(inventario.getStockActual() - item.getCantidad());
+            inventariosAActualizar.add(inventario);
 
-            inventarioRepository.save(inventario);
-
-            // d. Registrar el historial del movimiento
+            // Preparar movimiento y agregar a la lista
             MovimientoInventario movimiento = new MovimientoInventario();
             movimiento.setIdProducto(item.getIdProducto());
             movimiento.setIdSucursal(request.getIdSucursal());
             movimiento.setTipoMovimiento("VENTA");
             movimiento.setCantidad(item.getCantidad());
             movimiento.setFechaHora(LocalDateTime.now());
-            movimiento.setDescripcion(
-                    "Venta registrada en boleta #" + venta.getIdVenta());
+            movimiento.setDescripcion("Venta registrada en boleta #" + venta.getIdVenta());
+            movimientosAGuardar.add(movimiento);
 
-            movimientoRepository.save(movimiento);
-
-            // e. Calcular el subtotal y anotarlo en el detalle de la boleta
+            // Calcular subtotal, preparar detalle y agregar a la lista
             int subtotal = producto.getPrecio() * item.getCantidad();
             totalVenta += subtotal;
 
@@ -102,13 +100,16 @@ public class VentaService {
             detalle.setCantidad(item.getCantidad());
             detalle.setPrecioUnitario(producto.getPrecio());
             detalle.setSubtotal(subtotal);
-
-            detalleVentaRepository.save(detalle);
+            detallesAGuardar.add(detalle);
         }
 
-        // 3. Poner el gran total en la boleta final y guardarla
-        venta.setTotal(totalVenta);
+        // 3. ¡EL GOLPE FINAL! Guardar todas las listas de una sola vez
+        inventarioRepository.saveAll(inventariosAActualizar);
+        movimientoRepository.saveAll(movimientosAGuardar);
+        detalleVentaRepository.saveAll(detallesAGuardar);
 
+        // 4. Poner el gran total en la boleta final y actualizar
+        venta.setTotal(totalVenta);
         return ventaRepository.save(venta);
     }
 }
