@@ -284,26 +284,32 @@ td.muted{color:var(--text2)}
       </div>
     </div>
 
-    <div class="dash-bottom" style="grid-template-columns: 1fr 1fr;">
+    <div class="dash-bottom" style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
       
       <div class="alerts-card" style="display: flex; flex-direction: column;">
         <div class="alerts-title">1. Buscar Producto</div>
         <p style="font-size: 12px; color: var(--text2); margin-bottom: 15px;">Ingresa el código de barras EAN-13</p>
         
-        <div class="input-group">
-          <div class="input-wrap">
+        <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+          <div class="input-wrap" style="width: 90px; flex-shrink: 0;">
+            <i class="ti ti-multiplier-1x"></i>
+            <input class="field" id="pos-cantidad" type="number" placeholder="Cant." min="1">
+          </div>
+          <div class="input-wrap" style="flex-grow: 1;">
             <i class="ti ti-barcode"></i>
             <input class="field" id="pos-search" type="text" placeholder="Ej: 7801610002141" onkeypress="if(event.key==='Enter') buscarParaVenta()">
           </div>
         </div>
-        <button class="btn-outline" style="width:100%; margin-top:10px; justify-content: center;" onclick="buscarParaVenta()">
+
+        <button class="btn-outline" style="width:100%; justify-content: center;" onclick="buscarParaVenta()">
           <i class="ti ti-search"></i> Buscar y Agregar
         </button>
+
         <div class="mt-4" style="margin-top: 20px;">
-        <h5 style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 10px;">SUGERENCIAS RÁPIDAS</h5>
-        <div id="sugerencias-caja" style="display: flex; gap: 10px; flex-wrap: wrap;">
+          <h5 style="color: var(--text2); font-size: 0.9rem; margin-bottom: 10px;">SUGERENCIAS RÁPIDAS</h5>
+          <div id="sugerencias-caja" style="display: flex; gap: 10px; flex-wrap: wrap;">
+          </div>
         </div>
-</div>
       </div>
 
       <div class="calendar-card">
@@ -325,7 +331,7 @@ td.muted{color:var(--text2)}
         </table>
 
         <div style="font-size: 24px; font-family: 'Syne', sans-serif; font-weight: bold; text-align: right; margin-bottom: 15px; color: var(--text);">
-          Total: <span style="color: var(--gold);">$<span id="pos-total">0</span></span>
+          Total: $<span id="pos-total">0</span>
         </div>
         
         <label class="input-label" style="margin-top: 15px;">Medio de Pago</label>
@@ -336,9 +342,9 @@ td.muted{color:var(--text2)}
         </select>
 
         <div id="seccion-vuelto" style="display: none; margin-top: 15px; background: rgba(255,255,255,0.05); padding: 15px; border-radius: 8px;">
-        <label style="font-size: 0.8rem; color: #aaa;">MONTO RECIBIDO ($)</label>
-        <input type="number" id="monto-recibido" class="form-control" placeholder="Ej: 5000" oninput="calcularVuelto()" style="margin-bottom: 10px;">
-        <h4 style="margin: 0; color: #ffc107; font-size: 1.2rem;">Vuelto: $<span id="monto-vuelto">0</span></h4>
+          <label style="font-size: 0.8rem; color: #aaa;">MONTO RECIBIDO ($)</label>
+          <input type="number" id="monto-recibido" class="form-input" placeholder="Ej: 5000" oninput="calcularVuelto()" style="margin-bottom: 10px;">
+          <h4 style="margin: 0; color: #ffc107; font-size: 1.2rem;">Vuelto: $<span id="monto-vuelto">0</span></h4>
         </div>
         
         <button class="btn-gold" style="width: 100%; justify-content: center; padding: 14px; font-size: 15px;" onclick="completarVenta()">
@@ -346,9 +352,8 @@ td.muted{color:var(--text2)}
         </button>
       </div>
 
-    </div>
-  </div>
-</div>
+    </div> </div> </div> ```
+
 
 <div class="page" id="page-inventario" style="flex-direction:column">
   <div class="content">
@@ -656,52 +661,210 @@ td.muted{color:var(--text2)}
         </div>
       </div>
 
-</div><script>
+</div>
+
+<div id="modal-alerta-stock" class="modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 2000; justify-content: center; align-items: center; backdrop-filter: blur(3px);">
+  <div style="background: var(--surface); padding: 24px; border-radius: var(--r2); width: 400px; border: 1px solid var(--red); box-shadow: 0 10px 30px rgba(244,91,105,0.15);">
+    
+    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px; border-bottom: 1px solid var(--border); padding-bottom: 12px;">
+      <div style="width: 40px; height: 40px; border-radius: 50%; background: rgba(244,91,105,.15); color: var(--red); display: flex; align-items: center; justify-content: center; font-size: 24px;">
+        <i class="ti ti-alert-triangle"></i>
+      </div>
+      <h3 style="margin: 0; color: var(--text); font-family: 'Syne', sans-serif; font-size: 18px;">Stock Crítico Detectado</h3>
+    </div>
+    
+    <p style="color: var(--text2); font-size: 13px; margin-bottom: 12px;">Los siguientes productos requieren reposición:</p>
+    
+    <ul id="lista-productos-criticos" style="list-style: none; padding: 0; margin: 0 0 20px 0; max-height: 180px; overflow-y: auto; background: var(--surface2); border-radius: var(--r); padding: 12px; border: 1px solid var(--border);">
+      </ul>
+    
+    <button class="btn-primary" style="width: 100%; justify-content: center; background: var(--red); color: white; border: none;" onclick="document.getElementById('modal-alerta-stock').style.display='none'">
+      Entendido
+    </button>
+  </div>
+</div>
+<script>
 
 // ==========================================
 // FUNCIONES DE CONEXIÓN A LA API (BACKEND)
 // ==========================================
 
 // Cargar Inventario
+// Agrega esta variable global arriba, junto con tus otras variables
+
+let alertaStockMostrada = false;
+
 async function cargarInventarioDesdeAPI() {
-    console.log("Iniciando carga de Inventario...");
+    // 1. Rescatamos el ID del local donde acabamos de "entrar" (Si no hay, usamos la 1 por defecto)
+    const sucursalActiva = localStorage.getItem('nstock_sucursal_id') || 1;
+
+    const tbody = document.getElementById('inv-tbody');
+    if (tbody) {
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding: 40px 0; color: var(--text2);"><i class="ti ti-refresh" style="margin-right:8px;"></i> Sincronizando bodega...</td></tr>';
+    }
+    const info = document.getElementById('page-info');
+    if (info) info.textContent = 'Conectando con el servidor...';
+
     try {
-        const res = await fetch('/api/inventario');
+        // 2. Le pedimos al servidor ÚNICAMENTE el inventario de esta sucursal
+        const res = await fetch(`/api/inventario/sucursal/${sucursalActiva}`);
         const data = await res.json();
-        products = data.map(item => ({
-            id: item.idProducto,
-            nombre: item.nombreProducto || 'Sin nombre',
-            codigo: 'ID-' + item.idProducto,
-            stock: item.stockActual,
-            estado: 'Sucursal 1',
-            cat: 'General',
-            nivel: item.stockActual <= 15 ? 'critical' : (item.stockActual <= 50 ? 'low' : 'ok')
-        }));
+        
+        let productosCriticos = 0;
+        let nombresCriticos = []; // Nueva lista para guardar los nombres de los productos bajos
+
+        products = data.map(item => {
+            let nivelStock = 'ok';
+            const stockActual = parseInt(item.stockActual); 
+
+            if (stockActual <= 15) { 
+                nivelStock = 'critical'; 
+                productosCriticos++; 
+                // Guardamos el nombre y la cantidad para mostrarlo en el modal
+                nombresCriticos.push(`${item.nombreProducto || 'Sin nombre'} (${stockActual} un.)`);
+            }
+            else if (stockActual <= 50) {
+                nivelStock = 'low';
+            }
+
+            return {
+                id: item.idProducto,
+                nombre: item.nombreProducto || 'Producto sin nombre',
+                codigo: 'ID-' + item.idProducto, 
+                stock: stockActual,
+                estado: 'Sucursal 1', 
+                cat: 'General', 
+                nivel: nivelStock,
+                precio: item.precio || 0
+            };
+        });
+
         renderInventario(products);
+        const pageInfo = document.getElementById('page-info');
+        if(pageInfo) pageInfo.textContent = 'Mostrando ' + products.length + ' productos sincronizados';
+        
+        const totalProd = document.getElementById('total-productos');
+        if(totalProd) totalProd.textContent = products.length;
+
+        // NUEVA LÓGICA DE ALERTA VISUAL
+        if (productosCriticos > 0 && !alertaStockMostrada) {
+            setTimeout(() => {
+                const listaHTML = document.getElementById('lista-productos-criticos');
+                if (listaHTML) {
+                    listaHTML.innerHTML = ''; // Limpiamos la lista previa
+                    
+                    // Llenamos el modal con los nombres de los productos
+                    nombresCriticos.forEach(prod => {
+                        listaHTML.innerHTML += `
+                            <li style="color: var(--text); font-size: 13px; padding: 6px 0; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 8px;">
+                                <i class="ti ti-point-filled" style="color: var(--red); font-size: 12px;"></i> ${prod}
+                            </li>
+                        `;
+                    });
+                    
+                    // Mostramos el modal de N-Stock
+                    document.getElementById('modal-alerta-stock').style.display = 'flex';
+                }
+            }, 500); 
+            alertaStockMostrada = true; 
+        }
+        
     } catch (err) {
-        console.error("Error en Inventario:", err);
-        showToast('Error de conexión: Inventario', 'ti-alert-circle');
+        console.error("Error al conectar con la API:", err);
+        showToast('Error conectando al servidor', 'ti-alert-circle');
     }
 }
-
 // Cargar Sucursales
 async function cargarSucursalesDesdeAPI() {
-    console.log("Iniciando carga de Sucursales...");
     try {
         const res = await fetch('/api/sucursales');
         const data = await res.json();
-        branches = data.map(suc => ({
-            nombre: suc.nombre,
-            ubicacion: suc.direccion || 'Sin dirección',
-            dueno: 'N-Stock Admin',
-            contacto: 'No registrado',
-            estado: 'ok'
-        }));
+
+        let sucursalesCriticasCount = 0;
+
+        branches = data.map(suc => {
+            // REGLA DE NEGOCIO: Si tiene >= 5 productos críticos, la sucursal está en alerta.
+            // (Nota: Asegúrate de que tu backend envíe esta cantidad. Si no, temporalmente leerá 0).
+            const cantidadCriticos = suc.productosCriticos || 0; 
+            let estadoSucursal = 'ok';
+
+            if (cantidadCriticos >= 5) {
+                estadoSucursal = 'critical';
+                sucursalesCriticasCount++;
+            }
+
+            return {
+                id: suc.idSucursal || 1, 
+                nombre: suc.nombre,
+                ubicacion: suc.direccion || 'San Bernardo, Santiago',
+                dueno: 'N-Stock Admin',
+                contacto: 'No registrado',
+                estado: estadoSucursal,
+                totalCriticos: cantidadCriticos
+            };
+        });
+
+        // Actualizamos las tarjetas visuales de arriba en tu panel
+        const badgeCriticas = document.querySelector('.branch-stat-val.red');
+        const badgeTotal = document.querySelector('.branch-stat-val.blue');
+        if (badgeCriticas) badgeCriticas.textContent = sucursalesCriticasCount;
+        if (badgeTotal) badgeTotal.textContent = branches.length;
+
         renderBranches();
     } catch (err) {
-        console.error("Error en Sucursales:", err);
         showToast('Error de conexión: Sucursales', 'ti-alert-circle');
     }
+}
+
+function renderBranches() {
+  var tb = document.getElementById('branch-tbody');
+  if (!tb) return;
+  tb.innerHTML = '';
+
+  branches.forEach(function(b, i) {
+    // Definimos el color del semáforo según el estado
+    var dot = b.estado === 'ok' ? 'dot-active' : (b.estado === 'warn' ? 'dot-warn' : 'dot-critical');
+    var textoEstado = b.estado === 'ok' ? 'Activa' : (b.estado === 'warn' ? 'Alerta' : 'Crítica');
+    
+    var row = document.createElement('tr');
+    if (i % 2 === 1) row.style.background = 'var(--surface2)'; // Filas intercaladas
+
+    row.innerHTML = `
+      <td style="font-weight:500; color: var(--text)">${b.nombre}</td>
+      <td class="muted" style="font-family:monospace;font-size:12px">${b.ubicacion}</td>
+      <td>${b.dueno}</td>
+      <td class="muted">${b.contacto}</td>
+      <td>
+          <span class="estado-dot ${dot}"></span>
+          <span style="font-size:12px;color:var(--text2)">${textoEstado}</span>
+      </td>
+      <td style="text-align:right; display:flex; gap:8px; justify-content:flex-end; align-items:center;">
+          <button class="btn-gold" style="padding: 6px 14px; font-size: 12px; margin-right: 10px;" onclick="seleccionarSucursal(${b.id || 1}, '${b.nombre}')">
+              <i class="ti ti-login"></i> Ingresar
+          </button>
+          
+          <button class="action-btn edit" title="Editar"><i class="ti ti-edit"></i></button>
+          <button class="action-btn info" title="Info"><i class="ti ti-info-circle"></i></button>
+      </td>
+    `;
+    tb.appendChild(row);
+  });
+}
+
+function seleccionarSucursal(idSucursal, nombreSucursal) {
+    // 1. Guardamos la credencial del local en la memoria del navegador
+    localStorage.setItem('nstock_sucursal_id', idSucursal);
+    localStorage.setItem('nstock_sucursal_nombre', nombreSucursal);
+
+    // 2. Notificamos visualmente el cambio de entorno
+    showToast(`Iniciando entorno: ${nombreSucursal}`, 'ti-building-store');
+
+    // 3. Redirigimos automáticamente al usuario a la vista de Caja
+    var tabs = document.querySelectorAll('.nav-tab');
+    goPage('caja', tabs[0]);
+
+    // 4. (Próximo paso): Aquí actualizaremos el inventario para que solo traiga productos de esta sucursal.
+    cargarInventarioDesdeAPI();
 }
 // VARIABLES GLOBALES (Datos estáticos de productos han sido removidos para usar la API)
 var products = [];
@@ -717,58 +880,45 @@ var roles = {
   cajero: { password: '1234', role: 'usuario', name: 'Cajero', initial: 'C', allowedPages: ['caja','inventario','agregar'] }
 };
 
-// --- NUEVA FUNCIÓN: CARGAR INVENTARIO DESDE EL BACKEND ---
-async function cargarInventarioDesdeAPI() {
-    try {
-        const res = await fetch('/api/inventario');
-        const data = await res.json();
-        
-        products = data.map(item => {
-            let nivelStock = 'ok';
-            if (item.stockActual <= 15) nivelStock = 'critical';
-            else if (item.stockActual <= 50) nivelStock = 'low';
 
-            return {
-                id: item.idProducto,
-                nombre: item.nombreProducto || 'Producto sin nombre',
-                codigo: 'ID-' + item.idProducto, 
-                stock: item.stockActual,
-                estado: 'Sucursal 1', // Ajustado a la Sucursal 1 (N-Stock Central)
-                cat: 'General', 
-                nivel: nivelStock,
-                precio: item.precio || 0
-            };
-        });
-
-        // --- NUEVA FUNCIÓN: CARGAR SUCURSALES DESDE EL BACKEND ---
-
-        renderInventario(products);
-        document.getElementById('page-info').textContent = 'Mostrando ' + products.length + ' productos sincronizados';
-        document.getElementById('total-productos').textContent = products.length;
-        showToast('Inventario sincronizado', 'ti-cloud-check');
-        
-    } catch (err) {
-        console.error("Error al conectar con la API:", err);
-        showToast('Error conectando al servidor', 'ti-alert-circle');
-    }
-}
 
 function doLogin(){
-  var u=document.getElementById('login-user').value.trim().toLowerCase();
-  var p=document.getElementById('login-pass').value;
-  if(!u||!p){showToast('Completa los campos','ti-alert-circle');return;}
+  var u = document.getElementById('login-user').value.trim().toLowerCase();
+  var p = document.getElementById('login-pass').value;
+  
+  if(!u || !p){
+      showToast('Completa los campos','ti-alert-circle');
+      return;
+  }
+  
   var account = roles[u];
   if(!account || account.password !== p){
-    showToast('Usuario o contraseña incorrectos','ti-alert-circle');
-    return;
+      showToast('Usuario o contraseña incorrectos','ti-alert-circle');
+      return;
   }
+  
+  // ¡AQUÍ ESTÁ LA MAGIA QUE FALTABA!
+  // 1. Le decimos al sistema quién acaba de entrar
   currentUser = Object.assign({ username: u }, account);
-  document.getElementById('page-login').style.display='none';
-  document.getElementById('app').style.display='flex';
+  
+  // 2. Apagamos la pantalla de login y encendemos el sistema
+  document.getElementById('page-login').style.display = 'none';
+  document.getElementById('app').style.display = 'flex';
+  
   applyRolePermissions();
-  var tabs=document.querySelectorAll('.nav-tab');
-  tabs[0].classList.add('active');
-  goPage('caja',tabs[0]);
+  var tabs = document.querySelectorAll('.nav-tab');
+  
+  // LÓGICA DE DIRECCIONAMIENTO:
+  if (currentUser.role === 'admin') {
+      // El Admin va al lobby de sucursales a elegir local
+      tabs[2].classList.add('active'); 
+      goPage('sucursales', tabs[2]); 
+  } else {
+      // El Cajero va directo a su puesto de trabajo
+      tabs[0].classList.add('active');
+      goPage('caja', tabs[0]);
+      cargarInventarioDesdeAPI(); 
+  }
 }
 
 function applyRolePermissions(){
@@ -890,26 +1040,7 @@ function bulkDelete(){
   showToast('Productos eliminados','ti-trash');
 }
 
-function renderBranches(){
-  var tb=document.getElementById('branch-tbody');
-  tb.innerHTML='';
-  branches.forEach(function(b,i){
-    var dot=b.estado==='ok'?'dot-active':b.estado==='warn'?'dot-warn':'dot-critical';
-    var row=document.createElement('tr');
-    if(i%2===1) row.style.background='var(--surface2)';
-    row.innerHTML='<td style="font-weight:500">'+b.nombre+'</td>'+
-      '<td class="muted" style="font-family:monospace;font-size:12px">'+b.ubicacion+'</td>'+
-      '<td>'+b.dueno+'</td>'+
-      '<td class="muted">'+b.contacto+'</td>'+
-      '<td><span class="estado-dot '+dot+'"></span><span style="font-size:12px;color:var(--text2)">'+(b.estado==='ok'?'Activa':b.estado==='warn'?'Alerta':'Crítica')+'</span></td>'+
-      '<td style="text-align:right;display:flex;gap:4px;justify-content:flex-end">'+
-        '<button class="action-btn edit" title="Editar" onclick="showToast(\'Editando '+b.nombre+'\',\'ti-edit\')"><i class="ti ti-edit"></i></button>'+
-        '<button class="action-btn db" title="Base de datos" onclick="showToast(\'Stock de '+b.nombre+'\',\'ti-database\')"><i class="ti ti-database"></i></button>'+
-        '<button class="action-btn info" title="Info" onclick="showToast(\'Info: '+b.nombre+'\',\'ti-info-circle\')"><i class="ti ti-info-circle"></i></button>'+
-      '</td>';
-    tb.appendChild(row);
-  });
-}
+
 
 function renderSidebar(){
   var c=document.getElementById('sidebar-products');
@@ -976,7 +1107,6 @@ function toggleChip(el) {
 let guardandoProducto = false;
 
 async function addProduct() {
-  // Si ya se está guardando algo, ignoramos cualquier otro clic
   if (guardandoProducto) return; 
 
   if(!currentUser){
@@ -987,20 +1117,26 @@ async function addProduct() {
   const nombre = document.getElementById('np-nombre').value.trim();
   const codigo = document.getElementById('np-codigo').value.trim();
   const precio = document.getElementById('np-precio').value;
+  // ⚡ NUEVO: Leemos el stock inicial que escribiste
+  const stockInicial = document.getElementById('np-stock').value; 
+  // ⚡ NUEVO: Leemos en qué sucursal estás parado
+  const sucursalActiva = localStorage.getItem('nstock_sucursal_id') || 1;
 
   if (!nombre || !codigo || !precio || precio < 0) {
     showToast('Completa el nombre, código y un precio válido', 'ti-alert-triangle');
     return;
   }
 
-  // 2. Encendemos la bandera: ¡Empezamos a guardar!
   guardandoProducto = true; 
 
+  // ⚡ NUEVO: Empaquetamos todos los datos, incluyendo sucursal y stock
   const payload = {
     nombre: nombre,
     codigoBarras: codigo,
     precio: parseInt(precio),
-    categoria: document.querySelector('.chip.active')?.textContent || 'General'
+    categoria: document.querySelector('.chip.active')?.textContent || 'General',
+    idSucursal: parseInt(sucursalActiva),
+    stockInicial: stockInicial ? parseInt(stockInicial) : 0
   };
 
   try {
@@ -1015,6 +1151,7 @@ async function addProduct() {
       document.getElementById('np-nombre').value = '';
       document.getElementById('np-codigo').value = '';
       document.getElementById('np-precio').value = '';
+      document.getElementById('np-stock').value = ''; // Limpiamos la casilla
       cargarInventarioDesdeAPI(); 
     } else {
       showToast('Error al guardar en la base de datos', 'ti-alert-circle');
@@ -1023,8 +1160,6 @@ async function addProduct() {
     console.error("Error al enviar:", err);
     showToast('Error de conexión con el servidor', 'ti-wifi-off');
   } finally {
-    // 3. Pase lo que pase (éxito o error), apagamos la bandera al terminar
-    // para que el usuario pueda agregar un nuevo producto después.
     guardandoProducto = false; 
   }
 }
@@ -1047,6 +1182,10 @@ let totalVenta = 0;
 // 1. Buscar producto por código de barras
 async function buscarParaVenta() {
     const codigo = document.getElementById('pos-search').value.trim();
+    // ⚡ NUEVO: Leemos la cantidad. Si la dejaron vacía, asumimos que es 1.
+    const inputCant = document.getElementById('pos-cantidad').value;
+    const cantidadAgregar = inputCant ? parseInt(inputCant) : 1;
+
     if (!codigo) return;
     
     try {
@@ -1054,22 +1193,29 @@ async function buscarParaVenta() {
         if (res.ok) {
             const prod = await res.json();
             
-            // Si el producto ya está en el carrito, le sumamos 1 a la cantidad
+            // Si el producto ya está en el carrito, le sumamos la cantidad nueva
             const existente = carritoVenta.find(i => i.idProducto === prod.idProducto);
             if (existente) {
-                existente.cantidad += 1;
+                existente.cantidad += cantidadAgregar;
             } else {
                 carritoVenta.push({
                     idProducto: prod.idProducto,
                     nombre: prod.nombre,
                     precio: prod.precio,
-                    cantidad: 1
+                    cantidad: cantidadAgregar // ⚡ Asignamos la cantidad múltiple
                 });
             }
             
             actualizarCarrito();
-            document.getElementById('pos-search').value = ''; // Limpiar el input
-            showToast(`Agregado: ${prod.nombre}`, 'ti-check');
+            document.getElementById('pos-search').value = ''; // Limpiamos el código
+            
+            // ⚡ NUEVO: Limpiamos la casilla de cantidad para la siguiente lectura
+            const cantInput = document.getElementById('pos-cantidad');
+            if(cantInput) cantInput.value = ''; 
+            
+            document.getElementById('pos-search').focus(); // Devolvemos el cursor al código
+            
+            showToast(`Agregado: ${prod.nombre} (x${cantidadAgregar})`, 'ti-check');
         } else {
             showToast('Producto no encontrado', 'ti-alert-circle');
         }
@@ -1191,16 +1337,36 @@ function agregarAlCarritoSugerido(id, nombre, precio) {
 // 3. Enviar el JSON al Backend para registrar la venta
 async function completarVenta() {
     if (carritoVenta.length === 0) {
-        showToast('Debes agregar productos primero', 'ti-alert-triangle');
+        showToast('El carrito está vacío', 'ti-alert-triangle');
         return;
     }
 
-    const medioPago = document.getElementById('pos-metodo-pago').value;
-    
+    // 1. Construir el HTML de la boleta dentro del modal
+    let itemsHTML = carritoVenta.map(item => `
+        <div style="display:flex; justify-content:space-between; border-bottom:1px dashed #000; padding:4px 0;">
+            <span>${item.cantidad} x ${item.nombre.substring(0,12)}</span>
+            <span>$${item.precio * item.cantidad}</span>
+        </div>`).join('');
+
+    document.getElementById('contenido-boleta').innerHTML = `
+        <div style="text-align:center; margin-bottom:10px;">
+            <h3 style="margin:0;">N-STOCK</h3>
+            <p style="font-size:12px;">${new Date().toLocaleString()}</p>
+        </div>
+        ${itemsHTML}
+        <div style="text-align:right; font-weight:bold; margin-top:10px; font-size:16px;">
+            TOTAL: $${totalVenta}
+        </div>
+    `;
+
+    // 2. Mostrar el modal de la boleta
+    document.getElementById('modal-boleta').style.display = 'flex';
+
+    // 3. Registrar la venta en la base de datos (Backend)
     const payload = {
-        idSucursal: 1, 
+        idSucursal: localStorage.getItem('nstock_sucursal_id') || 1, 
         idUsuario: 1,  
-        medioPago: medioPago,
+        medioPago: document.getElementById('pos-metodo-pago').value,
         detalles: carritoVenta.map(item => ({
             idProducto: item.idProducto,
             cantidad: item.cantidad
@@ -1214,20 +1380,21 @@ async function completarVenta() {
             body: JSON.stringify(payload)
         });
 
-        if (res.ok) {
-            showToast('¡Venta registrada con éxito!', 'ti-receipt');
-            carritoVenta = []; 
-            actualizarCarrito();
-            cargarInventarioDesdeAPI(); // Actualiza el inventario en segundo plano
-        } else {
-            const errorData = await res.json();
-            showToast(`Error: ${errorData.error}`, 'ti-alert-triangle');
+        if (!res.ok) {
+            console.error("Error al registrar en BD");
         }
     } catch (err) {
-        showToast('Error crítico al procesar la venta', 'ti-alert-circle');
+        console.error("Error de conexión:", err);
     }
 }
 
+// Función auxiliar para cerrar el modal y limpiar
+function cerrarBoleta() {
+    document.getElementById('modal-boleta').style.display = 'none';
+    carritoVenta = [];
+    actualizarCarrito();
+    cargarInventarioDesdeAPI();
+}
 async function pedirNuevoStock(id, nombre) {
     if(!currentUser || currentUser.role !== 'admin'){
         showToast('Accion solo disponible para administradores','ti-lock');
@@ -1271,41 +1438,7 @@ async function pedirNuevoStock(id, nombre) {
             document.getElementById('resultadoVenta').innerText = "¡Venta Exitosa!\n" + JSON.stringify(data, null, 2);
       }
 
-              async function ejecutarSumaStock() {
-            const codigo = document.getElementById('quick-codigo').value.trim();
-            const cantidad = document.getElementById('quick-cantidad').value;
 
-            if (!codigo || !cantidad || cantidad <= 0) {
-                showToast('Ingresa un código y cantidad válidos', 'ti-alert-triangle');
-                return;
-            }
-
-            try {
-                const res = await fetch('/api/inventario/sumar-stock', {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        codigo: codigo,
-                        cantidad: parseInt(cantidad)
-                    })
-                });
-
-                if (res.ok) {
-                    showToast('¡Stock sumado correctamente!', 'ti-check');
-                    document.getElementById('quick-codigo').value = '';
-                    document.getElementById('quick-cantidad').value = '';
-                    document.getElementById('quick-codigo').focus();
-                    
-                    // Recargamos las listas para que veas el cambio al instante
-                    cargarInventarioDesdeAPI();
-                } else {
-                    const error = await res.text();
-                    showToast('Error: Producto no encontrado', 'ti-alert-circle');
-                }
-            } catch (err) {
-                showToast('Error conectando al servidor', 'ti-wifi-off');
-            }
-        }
 
         // Mostrar u ocultar opciones de merma según el selector
           function toggleMermaOptions() {
@@ -1326,12 +1459,15 @@ async function pedirNuevoStock(id, nombre) {
               }
           }
 
-          async function ejecutarSumaStock() {
+        async function ejecutarSumaStock() {
               const tipoAjuste = document.getElementById('quick-tipo').value;
               const codigo = document.getElementById('quick-codigo').value.trim();
               const cantidad = document.getElementById('quick-cantidad').value;
               const motivo = document.getElementById('quick-motivo').value;
               const comentario = document.getElementById('quick-comentario').value;
+
+              // ⚡ LEEMOS EN QUÉ SUCURSAL ESTAMOS PARADOS
+              const sucursalActiva = localStorage.getItem('nstock_sucursal_id') || 1;
 
               if (!codigo || !cantidad || cantidad <= 0) {
                   showToast('Ingresa un código y cantidad válidos', 'ti-alert-triangle');
@@ -1347,7 +1483,8 @@ async function pedirNuevoStock(id, nombre) {
                           cantidad: parseInt(cantidad),
                           tipoAjuste: tipoAjuste,
                           motivo: tipoAjuste === 'MERMA' ? motivo : 'INGRESO_NORMAL',
-                          comentario: comentario
+                          comentario: comentario,
+                          idSucursal: parseInt(sucursalActiva) // ⚡ ENVIAMOS EL ID A JAVA
                       })
                   });
 
@@ -1438,5 +1575,15 @@ async function abrirModalEditar(id) {
         }
           
 </script>
+
+<div id="modal-boleta" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:9999; justify-content:center; align-items:center;">
+  <div style="background:#fff; padding:20px; width:300px; color:#000; font-family:monospace;">
+    <div id="contenido-boleta"></div>
+    <div style="margin-top:20px; display:flex; gap:10px;">
+      <button class="btn-primary" onclick="window.print()">Imprimir</button>
+      <button class="btn-primary" style="background:#ccc;" onclick="cerrarBoleta()">Cerrar</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>

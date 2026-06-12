@@ -54,12 +54,14 @@
         </div>
 
         <div class="card">
-            <h2>🛒 Punto de Venta</h2>
-            <label>ID del Producto:</label>
-            <input type="number" id="prodId" placeholder="Ej: 1">
-            <label>Cantidad:</label>
-            <input type="number" id="cant" value="1">
-            <button class="btn btn-sell" onclick="realizarVenta()">REGISTRAR VENTA</button>
+            <h2>🛒 Carrito de Compras</h2>
+            <ul id="listaCarrito" style="list-style: none; padding: 0; margin-bottom: 15px; max-height: 150px; overflow-y: auto;">
+                <li style="color: #666; font-size: 0.9rem;">Esperando productos...</li>
+            </ul>
+            <div style="font-size: 1.2rem; font-weight: bold; margin-bottom: 15px; border-top: 1px solid #eee; padding-top: 10px;">
+                Total a Cobrar: $<span id="totalCarrito">0</span>
+            </div>
+            <button class="btn btn-sell" onclick="realizarVenta()">💸 COBRAR Y REGISTRAR</button>
             <div id="mensajeVenta" style="margin-top: 15px; font-weight: bold;"></div>
         </div>
 
@@ -83,44 +85,109 @@
 
 <script>
     const API_BASE = "/api";
+    let carrito = []; // Memoria temporal del carrito
 
-    // --- FUNCIÓN: CONSULTAR PRECIO ---
+    // --- 1. CONSULTAR PRECIO Y AGREGAR AL CARRITO ---
     async function consultarPrecio() {
-        const codigo = document.getElementById('scanInput').value;
+        const input = document.getElementById('scanInput');
+        const codigo = input.value.trim();
         const box = document.getElementById('infoProducto');
         
+        if (!codigo) return;
+
         try {
             const res = await fetch(`${API_BASE}/productos/buscar?codigo=${codigo}`);
             const data = await res.json();
 
             if (res.ok) {
+                // Mostrar en el cuadro azul
                 box.style.borderLeftColor = "var(--accent)";
                 box.innerHTML = `
                     <h3 style="margin:0">${data.nombre}</h3>
                     <p style="font-size: 1.5rem; color: var(--primary); margin: 10px 0;">$${data.precio}</p>
                     <span class="badge">${data.categoria}</span>
                 `;
-                // Autocompletar el ID en la sección de venta para facilitar el video
-                document.getElementById('prodId').value = data.idProducto;
+                
+                // Agregar automáticamente a la lista de cobro
+                agregarAlCarrito(data);
+
+                // Limpiar la caja y dejarla lista para el siguiente disparo
+                input.value = '';
+                input.focus(); 
+
             } else {
                 box.style.borderLeftColor = "red";
                 box.innerHTML = `<b style="color:red">❌ Producto no encontrado</b>`;
+                input.value = ''; 
+                input.focus();
             }
         } catch (err) {
             box.innerHTML = "Error de conexión";
         }
     }
 
-    // --- FUNCIÓN: REALIZAR VENTA ---
+    // --- 2. GESTIÓN DEL CARRITO VISUAL ---
+    function agregarAlCarrito(producto) {
+        let itemExistente = carrito.find(item => item.idProducto === producto.idProducto);
+        
+        if (itemExistente) {
+            itemExistente.cantidad += 1;
+        } else {
+            carrito.push({
+                idProducto: producto.idProducto,
+                nombre: producto.nombre,
+                precio: producto.precio,
+                cantidad: 1
+            });
+        }
+        actualizarVistaCarrito();
+    }
+
+    function actualizarVistaCarrito() {
+        const lista = document.getElementById('listaCarrito');
+        const totalTexto = document.getElementById('totalCarrito');
+        let granTotal = 0;
+
+        if (carrito.length === 0) {
+            lista.innerHTML = '<li style="color: #666; font-size: 0.9rem;">Esperando productos...</li>';
+            totalTexto.innerText = "0";
+            return;
+        }
+
+        lista.innerHTML = "";
+        carrito.forEach((item) => {
+            let subtotal = item.precio * item.cantidad;
+            granTotal += subtotal;
+            lista.innerHTML += `
+                <li style="display: flex; justify-content: space-between; border-bottom: 1px solid #eee; padding: 8px 0;">
+                    <span><b>${item.cantidad}x</b> ${item.nombre}</span>
+                    <span>$${subtotal}</span>
+                </li>
+            `;
+        });
+
+        totalTexto.innerText = granTotal;
+    }
+
+    // --- 3. REGISTRAR LA VENTA EN LA NUBE ---
     async function realizarVenta() {
-        const idProd = document.getElementById('prodId').value;
-        const cantidad = document.getElementById('cant').value;
+        if (carrito.length === 0) {
+            alert("No hay productos en el carrito.");
+            return;
+        }
+
         const msg = document.getElementById('mensajeVenta');
+
+        const detallesVenta = carrito.map(item => ({
+            idProducto: item.idProducto,
+            cantidad: item.cantidad
+        }));
 
         const ventaData = {
             idSucursal: 1,
             idUsuario: 1,
-            detalles: [{ idProducto: parseInt(idProd), cantidad: parseInt(cantidad) }]
+            medioPago: "Efectivo", 
+            detalles: detallesVenta
         };
 
         try {
@@ -134,36 +201,72 @@
             if (res.ok) {
                 msg.style.color = "green";
                 msg.innerText = `✅ Venta OK: $${data.total}`;
-                cargarInventario(); // Refresca el stock automáticamente
+                
+                // Resetear todo después de cobrar
+                carrito = [];
+                actualizarVistaCarrito();
+                cargarInventario(); 
+                document.getElementById('infoProducto').innerHTML = '<i>Esperando escaneo...</i>';
+                
             } else {
                 msg.style.color = "red";
-                msg.innerText = `❌ Error: ${data.error}`;
+                msg.innerText = `❌ Error: ${data.error || 'No se pudo vender'}`;
             }
         } catch (err) { msg.innerText = "Error de conexión"; }
     }
 
-    // --- FUNCIÓN: CARGAR INVENTARIO ---
+let alertaStockMostrada = false; // Control para que el popup solo salga una vez
+
+    // --- 4. CARGAR LA BODEGA ---
     async function cargarInventario() {
+        const tbody = document.querySelector("#tablaInventario tbody");
+        
+        // SOLUCIÓN UX: Mientras pasan esos 5 segundos, le avisamos al usuario para que no piense que está trabado
+        tbody.innerHTML = "<tr><td colspan='3' style='text-align:center; padding: 20px;'>⏳ Conectando con la bodega...</td></tr>";
+
         try {
             const res = await fetch(`${API_BASE}/inventario`);
             const data = await res.json();
-            const tbody = document.querySelector("#tablaInventario tbody");
-            tbody.innerHTML = "";
             
+            tbody.innerHTML = ""; // Limpiamos el mensaje de "Conectando..."
+            let productosCriticos = 0;
+
             data.forEach(item => {
-                const row = `<tr>
+                let estiloFila = "";
+                let icono = "";
+                
+                // FORZAMOS a que el dato sea un número matemático (A veces el servidor lo manda como texto "5")
+                const stock = parseInt(item.stockActual);
+
+                if (stock <= 5) {
+                    estiloFila = "background-color: #ffebee; color: #c62828;"; 
+                    icono = "⚠️ ";
+                    productosCriticos++;
+                }
+
+                const row = `<tr style="${estiloFila}">
                     <td><span class="badge">#${item.idProducto}</span></td>
-                    <td>${item.nombreProducto || 'Sin Nombre'}</td>
-                    <td><strong>${item.stockActual}</strong> un.</td>
+                    <td><b>${icono}</b> ${item.nombreProducto || 'Sin Nombre'}</td>
+                    <td><strong>${stock}</strong> un.</td>
                 </tr>`;
                 tbody.innerHTML += row;
             });
-        } catch (err) { console.error(err); }
-    }
 
-    // Carga inicial
+            // SOLUCIÓN ALERTA: Le damos medio segundo de respiro al navegador antes de lanzar el mensaje
+            if (productosCriticos > 0 && !alertaStockMostrada) {
+                setTimeout(() => {
+                    alert(`🚨 ¡Atención! Tienes ${productosCriticos} producto(s) con stock crítico.`);
+                }, 500); 
+                alertaStockMostrada = true; 
+            }
+
+        } catch (err) { 
+            tbody.innerHTML = "<tr><td colspan='3' style='color:red; text-align:center;'>❌ Error de conexión con la nube.</td></tr>";
+        }
+    }
+    // Arranque inicial
     cargarInventario();
 </script>
 
 </body>
-</html>
+</html> 

@@ -35,21 +35,18 @@ public class ProductoService {
     }
 
 @Transactional
-    public Producto guardarProducto(Producto producto) {
+    public Producto guardarProducto(Producto producto, Integer idSucursal, Integer stockInicial) {
         // 1. Guardamos el producto en el catálogo (Tabla Productos)
         Producto nuevoProducto = productoRepository.save(producto);
 
         // 2. Creamos el registro automático para la bodega (Tabla Inventario)
         Inventario nuevoInventario = new Inventario();
         
-        // OPCIÓN A: Si tu entidad Inventario recibe el objeto Producto completo
-        //nuevoInventario.setProducto(nuevoProducto);
-        
-        // OPCIÓN B: Si tu entidad Inventario guarda solo el ID numérico directo
         nuevoInventario.setIdProducto(nuevoProducto.getIdProducto());
-
-        nuevoInventario.setIdSucursal(1);           // Asignamos la sucursal 1 por defecto
-        nuevoInventario.setStockActual(0);          // Iniciamos con cero unidades
+        
+        // ⚡ AQUÍ ESTÁ LA MAGIA: Asignamos los valores dinámicos
+        nuevoInventario.setIdSucursal(idSucursal);           
+        nuevoInventario.setStockActual(stockInicial);          
 
         // 3. Guardamos el registro en la tabla de inventarios
         inventarioRepository.save(nuevoInventario);

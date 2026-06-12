@@ -30,19 +30,28 @@ public class ProductoController {
     }
 
 @PostMapping
-    public ResponseEntity<?> crearProducto(@RequestBody Producto producto) {
+    public ResponseEntity<?> crearProducto(@RequestBody Map<String, Object> payload) {
         try {
-            // RAYOS X: Para ver en la consola si Java está recibiendo los datos
+            // RAYOS X: Para ver en la consola lo que llega del navegador
             System.out.println("--- INTENTO DE GUARDAR NUEVO PRODUCTO ---");
-            System.out.println("Nombre recibido: " + producto.getNombre());
-            System.out.println("Categoría recibida: " + producto.getCategoria());
+            System.out.println("Datos recibidos: " + payload);
 
-            // Aquí le pasamos el paquete al Service para que lo meta a MySQL
-            Producto nuevoProducto = productoService.guardarProducto(producto);
+            // 1. Armamos manualmente el objeto Producto
+            Producto producto = new Producto();
+            producto.setNombre(payload.get("nombre").toString());
+            producto.setCodigoBarras(payload.get("codigoBarras").toString());
+            producto.setPrecio(Integer.parseInt(payload.get("precio").toString()));
+            producto.setCategoria(payload.getOrDefault("categoria", "General").toString());
+
+            // 2. Atrapamos los nuevos datos de inventario
+            Integer idSucursal = Integer.parseInt(payload.getOrDefault("idSucursal", "1").toString());
+            Integer stockInicial = Integer.parseInt(payload.getOrDefault("stockInicial", "0").toString());
+
+            // 3. Le pasamos todo al Service (Te marcará rojo hasta que hagamos el paso 2)
+            Producto nuevoProducto = productoService.guardarProducto(producto, idSucursal, stockInicial);
 
             System.out.println("Resultado: ÉXITO. Producto guardado con ID: " + nuevoProducto.getIdProducto());
             
-            // Le respondemos al frontend que todo salió perfecto
             return ResponseEntity.ok(nuevoProducto);
 
         } catch (Exception e) {

@@ -63,23 +63,23 @@ public class InventarioController {
         }
     }
     
-
-@PutMapping("/sumar-stock") // Mantenemos la ruta para no romper tu JS
+@PutMapping("/sumar-stock") 
     public ResponseEntity<?> ajustarStockRapido(@RequestBody Map<String, Object> payload) {
         try {
             String codigo = payload.get("codigo").toString();
             Integer cantidad = Integer.parseInt(payload.get("cantidad").toString());
             
-            // Atrapamos los nuevos datos (si no vienen, les damos un valor por defecto)
             String tipoAjuste = payload.getOrDefault("tipoAjuste", "INGRESO").toString();
             String comentario = payload.getOrDefault("comentario", "").toString();
             
-            // Transformamos el texto del motivo en el Enum de Java
             String motivoString = payload.getOrDefault("motivo", "INGRESO_NORMAL").toString();
             MotivoMerma motivo = MotivoMerma.valueOf(motivoString);
 
-            // Llamamos al nuevo método del servicio
-            boolean exito = inventarioService.ajustarStockRapido(codigo, cantidad, tipoAjuste, motivo, comentario);
+            // ⚡ ATRAPAMOS EL ID DE LA SUCURSAL QUE MANDÓ EL JAVASCRIPT
+            Integer idSucursal = Integer.parseInt(payload.getOrDefault("idSucursal", "1").toString());
+
+            // ⚡ SE LO PASAMOS AL SERVICIO (Añadimos idSucursal al final)
+            boolean exito = inventarioService.ajustarStockRapido(codigo, cantidad, tipoAjuste, motivo, comentario, idSucursal);
 
             if (exito) {
                 return ResponseEntity.ok().body("{\"mensaje\": \"Stock actualizado correctamente\"}");
@@ -91,5 +91,33 @@ public class InventarioController {
         } catch (Exception e) {
             return ResponseEntity.status(500).body("{\"error\": \"Error al procesar la solicitud\"}");
         }
+    }
+@GetMapping("/sucursal/{idSucursal}")
+    public ResponseEntity<List<Map<String, Object>>> obtenerInventarioPorSucursal(@PathVariable Integer idSucursal) {
+        
+        // 1. Llamamos al servicio para traer SOLO el stock de este local
+        List<Inventario> listaLocal = inventarioService.obtenerPorSucursal(idSucursal);
+        
+        // ¡Ojo aquí! Borramos el "if (listaLocal.isEmpty())"
+        
+        // 2. Mapeamos la información
+        // Si listaLocal no tiene nada, Java simplemente creará una respuesta vacía [] automáticamente
+        List<Map<String, Object>> respuesta = listaLocal.stream().map(inv -> {
+            Map<String, Object> map = new HashMap<>();
+            map.put("idProducto", inv.getIdProducto());
+            map.put("stockActual", inv.getStockActual());
+            map.put("idSucursal", idSucursal);
+            
+            // Buscamos los detalles visuales en el catálogo de productos
+            productoRepository.findById(inv.getIdProducto()).ifPresent(p -> {
+                map.put("nombreProducto", p.getNombre());
+                map.put("precio", p.getPrecio());
+                map.put("codigo", p.getCodigoBarras());
+            });
+            
+            return map;
+        }).collect(Collectors.toList());
+        
+        return ResponseEntity.ok(respuesta); // Devolverá [] al navegador, y no habrá error
     }
 }

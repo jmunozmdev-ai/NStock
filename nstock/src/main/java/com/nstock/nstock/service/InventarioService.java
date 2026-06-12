@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.Optional;
+import java.util.List;
 
 @Service
 public class InventarioService {
@@ -39,9 +40,8 @@ public class InventarioService {
         }
         return false;
     }
-
 @Transactional
-    public boolean ajustarStockRapido(String inputCodigo, Integer cantidad, String tipoAjuste, MotivoMerma motivo, String comentario) {
+    public boolean ajustarStockRapido(String inputCodigo, Integer cantidad, String tipoAjuste, MotivoMerma motivo, String comentario, Integer idSucursal) { // ⚡ Recibimos el ID
         
         Optional<Producto> productoOpt = productoRepository.findByCodigoBarras(inputCodigo);
 
@@ -54,41 +54,57 @@ public class InventarioService {
 
         if (productoOpt.isPresent()) {
             Producto producto = productoOpt.get();
-            InventarioId idCompuesto = new InventarioId(producto.getIdProducto(), 1);
+            // ⚡ USAMOS EL ID DEL LOCAL, NO EL NÚMERO 1
+            InventarioId idCompuesto = new InventarioId(producto.getIdProducto(), idSucursal);
             Optional<Inventario> invOpt = inventarioRepository.findById(idCompuesto);
 
+            Inventario inv;
             if (invOpt.isPresent()) {
-                Inventario inv = invOpt.get();
-                int stockActual = inv.getStockActual();
-
-                // REGLA MATEMÁTICA: ¿Es Merma o Ingreso?
+                inv = invOpt.get();
+            } else {
+                // ⚡ LÓGICA INTELIGENTE: Si es primera vez que este producto llega a este local, lo creamos
                 if ("MERMA".equalsIgnoreCase(tipoAjuste)) {
-                    if (stockActual < cantidad) {
-                        return false; // Bloquea si intentan sacar más de lo que hay
-                    }
-                    inv.setStockActual(stockActual - cantidad);
-                } else {
-                    inv.setStockActual(stockActual + cantidad);
+                    return false; // No puedes sacar mercadería de una bodega vacía
                 }
-                
-                inventarioRepository.save(inv);
-
-                // TRAZABILIDAD: Guardamos el comprobante en el historial
-                MovimientoInventario mov = new MovimientoInventario();
-                mov.setIdProducto(producto.getIdProducto());
-                mov.setIdSucursal(1);
-                mov.setTipoMovimiento(tipoAjuste.toUpperCase()); // "INGRESO" o "MERMA"
-                mov.setCantidad(cantidad);
-                mov.setFechaHora(java.time.LocalDateTime.now());
-                mov.setMotivoMerma("MERMA".equalsIgnoreCase(tipoAjuste) ? motivo : MotivoMerma.INGRESO_NORMAL);
-                mov.setComentario(comentario);
-                mov.setDescripcion("Ajuste rápido desde panel");
-                
-                movimientoInventarioRepository.save(mov);
-
-                return true;
+                inv = new Inventario();
+                inv.setIdProducto(producto.getIdProducto());
+                inv.setIdSucursal(idSucursal);
+                inv.setStockActual(0);
             }
+
+            int stockActual = inv.getStockActual();
+
+            // REGLA MATEMÁTICA: ¿Es Merma o Ingreso?
+            if ("MERMA".equalsIgnoreCase(tipoAjuste)) {
+                if (stockActual < cantidad) {
+                    return false; // Bloquea si intentan sacar más de lo que hay
+                }
+                inv.setStockActual(stockActual - cantidad);
+            } else {
+                inv.setStockActual(stockActual + cantidad);
+            }
+            
+            inventarioRepository.save(inv);
+
+            // TRAZABILIDAD: Guardamos el comprobante en el historial
+            MovimientoInventario mov = new MovimientoInventario();
+            mov.setIdProducto(producto.getIdProducto());
+            mov.setIdSucursal(idSucursal); // ⚡ USAMOS EL ID DEL LOCAL, NO EL NÚMERO 1
+            mov.setTipoMovimiento(tipoAjuste.toUpperCase()); 
+            mov.setCantidad(cantidad);
+            mov.setFechaHora(java.time.LocalDateTime.now());
+            mov.setMotivoMerma("MERMA".equalsIgnoreCase(tipoAjuste) ? motivo : MotivoMerma.INGRESO_NORMAL);
+            mov.setComentario(comentario);
+            mov.setDescripcion("Ajuste rápido desde panel");
+            
+            movimientoInventarioRepository.save(mov);
+
+            return true;
         }
         return false;
     }
+ // Filtro para traer solo la mercadería de un local específico
+    public List<Inventario> obtenerPorSucursal(Integer idSucursal) {
+        return inventarioRepository.findByIdSucursal(idSucursal);
+    }   
 }
